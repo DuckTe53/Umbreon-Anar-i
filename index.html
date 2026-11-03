@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sunucu Adı</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; font-family: system-ui, sans-serif; color: #fff; background: #1a0f2e; }
+
+  /* Sabit üst panel */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 30px;
+    background: rgba(20, 10, 40, .85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,.1);
+  }
+  .logo { font-weight: 800; font-size: 20px; color: #c084fc; }
+  nav a { color: #ddd; text-decoration: none; margin: 0 14px; font-weight: 600; }
+  nav a:hover { color: #fff; }
+  .actions { display: flex; gap: 10px; align-items: center; }
+
+  button {
+    cursor: pointer; border: 0; border-radius: 8px;
+    padding: 9px 16px; font-weight: 700; color: #fff; background: #7c3aed;
+  }
+  button.ghost { background: rgba(255,255,255,.1); }
+  button.ghost:hover { background: rgba(255,255,255,.2); }
+
+  /* Bölümler */
+  .hero {
+    text-align: center; padding: 120px 20px;
+    background: radial-gradient(circle at top, #7e22ce, #1a0f2e 70%);
+  }
+  .hero h1 { font-size: 4rem; margin: 0 0 10px; }
+  section.block { padding: 70px 30px; }
+  .block h2 { text-align: center; font-size: 2rem; margin-bottom: 30px; }
+  .grid {
+    display: grid; gap: 20px; max-width: 1000px; margin: auto;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .card {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+    border-radius: 14px; padding: 22px; text-align: center;
+  }
+  .card p { color: #bbb; font-size: 14px; }
+  .card .price { font-size: 1.6rem; color: #c084fc; font-weight: 800; margin: 10px 0; }
+  .card button { width: 100%; }
+  .news { max-width: 700px; margin: auto; color: #ccc; line-height: 1.6; }
+
+  /* Modallar */
+  .modal {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.6); display: none;
+    align-items: center; justify-content: center;
+  }
+  .modal.open { display: flex; }
+  .box {
+    position: relative; width: min(380px, 92%); max-height: 85vh; overflow-y: auto;
+    background: #241539; padding: 26px; border-radius: 14px;
+  }
+  .box h2 { margin-top: 0; }
+  .box input {
+    width: 100%; padding: 10px; margin: 6px 0 12px; border-radius: 8px;
+    border: 1px solid #444; background: #1a0f2e; color: #fff;
+  }
+  .box form button { width: 100%; }
+  .close { position: absolute; top: 8px; right: 12px; background: none; font-size: 24px; padding: 0; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tabs button { flex: 1; }
+  .tabs button:not(.active) { background: rgba(255,255,255,.1); }
+  .msg { color: #f87171; min-height: 20px; font-size: 14px; }
+  .row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid #333; gap: 10px;
+  }
+  .row small { color: #aaa; }
+  .total { text-align: right; font-size: 18px; font-weight: 700; margin: 14px 0; }
+  .cart-btn { position: relative; }
+  .badge {
+    background: #ef4444; border-radius: 50%; padding: 1px 7px;
+    font-size: 12px; margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="logo">SUNUCU</div>
+  <nav>
+    <a href="#home">Ana Sayfa</a>
+    <a href="#shop">Mağaza</a>
+    <a href="#news">Haberler</a>
+  </nav>
+  <div class="actions">
+    <button class="ghost cart-btn" onclick="openModal('cartModal')">🛒 Sepet <span class="badge" id="cartCount">0</span></button>
+    <span id="authArea" style="display:flex;gap:8px"></span>
+  </div>
+</header>
+
+<section class="hero" id="home">
+  <h1>SUNUCU ADI</h1>
+  <p>Kalitenin tek adresi!</p>
+  <button onclick="location.hash='#shop'">Mağazaya Git</button>
+</section>
+
+<section class="block" id="shop">
+  <h2>Mağaza</h2>
+  <div class="grid" id="productGrid"></div>
+</section>
+
+<section class="block" id="news">
+  <h2>Haberler</h2>
+  <div class="news">
+    <p><strong>Sunucu açıldı!</strong> Hoş geldin, kayıt olup alışverişe başlayabilirsin.</p>
+    <p><strong>Yeni etkinlik:</strong> Bu hafta sonu özel turnuva düzenlenecek.</p>
+  </div>
+</section>
+
+<!-- Giriş / Kayıt modalı -->
+<div class="modal" id="authModal">
+  <div class="box">
+    <button class="close" onclick="closeModal('authModal')">×</button>
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="switchTab('login')">Giriş Yap</button>
+      <button id="tabRegister" onclick="switchTab('register')">Kayıt Ol</button>
+    </div>
+
+    <form id="loginForm" onsubmit="login(event)">
+      <input id="loginUser" placeholder="Kullanıcı adı" required>
+      <input id="loginPass" type="password" placeholder="Şifre" required>
+      <button type="submit">Giriş Yap</button>
+    </form>
+
+    <form id="registerForm" hidden onsubmit="register(event)">
+      <input id="regUser" placeholder="Kullanıcı adı" required>
+      <input id="regMail" type="email" placeholder="E-posta" required>
+      <input id="regPass" type="password" placeholder="Şifre (en az 6 karakter)" required>
+      <button type="submit">Kayıt Ol</button>
+    </form>
+
+    <p class="msg" id="authMsg"></p>
+  </div>
+</div>
+
+<!-- Sepet modalı -->
+<div class="modal" id="cartModal">
+  <div class="box">
+    <button class="close" onclick="closeModal('cartModal')">×</button>
+    <h2>Sepetim</h2>
+    <div id="cartList"></div>
+    <div class="total">Toplam: <span id="cartTotal">0 ₺</span></div>
+    <button onclick="checkout()" style="width:100%">Satın Al</button>
+  </div>
+</div>
+
+<!-- Hesabım / satın alma geçmişi modalı -->
+<div class="modal" id="accountModal">
+  <div class="box">
+    <button class="close" onclick="closeModal('accountModal')">×</button>
+    <h2>Satın Alımlarım</h2>
+    <div id="accountList"></div>
+  </div>
+</div>
+
+<script>
+  const products = [
+    { id: 1, name: 'VIP Rütbesi',     price: 49, desc: 'Özel prefix ve 2x EXP' },
+    { id: 2, name: 'MVP Rütbesi',     price: 99, desc: 'Tüm VIP özellikleri + uçma' },
+    { id: 3, name: '1000 Coin',       price: 29, desc: 'Sunucu içi para birimi' },
+    { id: 4, name: 'Başlangıç Kiti',  price: 19, desc: 'Başlangıç eşyaları paketi' }
+  ];
+
+  // Veriler tarayıcıda (localStorage) saklanır
+  let db = JSON.parse(localStorage.getItem('vn_db')) || { users: [], purchases: {}, cart: [], session: null };
+
+  function save() { localStorage.setItem('vn_db', JSON.stringify(db)); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+  // Modal yönetimi
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal').forEach(m =>
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
+  );
+
+  function openAuth(tab) { switchTab(tab); openModal('authModal'); }
+  function switchTab(tab) {
+    loginForm.hidden = tab !== 'login';
+    registerForm.hidden = tab !== 'register';
+    tabLogin.classList.toggle('active', tab === 'login');
+    tabRegister.classList.toggle('active', tab === 'register');
+    authMsg.textContent = '';
+  }
+
+  // Kayıt ve giriş
+  function register(e) {
+    e.preventDefault();
+    const u = regUser.value.trim(), m = regMail.value.trim(), p = regPass.value;
+    if (p.length < 6) return authMsg.textContent = 'Şifre en az 6 karakter olmalı.';
+    if (db.users.some(x => x.username.toLowerCase() === u.toLowerCase()))
+      return authMsg.textContent = 'Bu kullanıcı adı zaten alınmış.';
+
+    db.users.push({ username: u, email: m, password: p });
+    db.session = u;
+    save();
+    e.target.reset();
+    closeModal('authModal');
+    updateUI();
+  }
+
+  function login(e) {
+    e.preventDefault();
+    const user = db.users.find(x => x.username === loginUser.value.trim() && x.password === loginPass.value);
+    if (!user) return authMsg.textContent = 'Kullanıcı adı veya şifre hatalı.';
+    db.session = user.username;
+    save();
+    e.target.reset();
+    closeModal('authModal');
+    updateUI();
+  }
+
+  function logout() {
+    db.session = null;
+    save();
+    updateUI();
+  }
+
+  // Mağaza ve sepet
+  function renderProducts() {
+    productGrid.innerHTML = products.map(p => `
+      <div class="card">
+        <h3>${p.name}</h3>
+        <p>${p.desc}</p>
+        <div class="price">${p.price} ₺</div>
+        <button onclick="addToCart(${p.id})">Sepete Ekle</button>
+      </div>`).join('');
+  }
+
+  function addToCart(id) {
+    db.cart.push(id);
+    save();
+    updateUI();
+  }
+
+  function removeFromCart(i) {
+    db.cart.splice(i, 1);
+    save();
+    updateUI();
+  }
+
+  function renderCart() {
+    const items = db.cart.map(id => products.find(p => p.id === id));
+    cartList.innerHTML = items.length
+      ? items.map((p, i) => `
+          <div class="row">
+            <span>${p.name}</span>
+            <span>${p.price} ₺ <button class="ghost" onclick="removeFromCart(${i})">✕</button></span>
+          </div>`).join('')
+      : '<p>Sepetin boş.</p>';
+    const total = items.reduce((s, p) => s + p.price, 0);
+    cartTotal.textContent = total + ' ₺';
+  }
+
+  // Satın alma (demo: gerçek ödeme yapılmaz)
+  function checkout() {
+    if (!db.cart.length) return alert('Sepetin boş.');
+    if (!db.session) {
+      closeModal('cartModal');
+      openAuth('login');
+      return alert('Satın almak için önce giriş yapmalısın.');
+    }
+    const items = db.cart.map(id => products.find(p => p.id === id));
+    const total = items.reduce((s, p) => s + p.price, 0);
+    (db.purchases[db.session] ||= []).push({
+      date: new Date().toLocaleString('tr-TR'),
+      items: items.map(p => p.name),
+      total
+    });
+    db.cart = [];
+    save();
+    closeModal('cartModal');
+    updateUI();
+    alert('Satın alma tamamlandı! (Demo)');
+  }
+
+  function openAccount() {
+    const list = db.purchases[db.session] || [];
+    accountList.innerHTML = list.length
+      ? list.map(p => `
+          <div class="row">
+            <span>${esc(p.date)}<br><small>${p.items.map(esc).join(', ')}</small></span>
+            <span>${p.total} ₺</span>
+          </div>`).join('')
+      : '<p>Henüz satın alma yok.</p>';
+    openModal('accountModal');
+  }
+
+  // Üst paneli ve sepeti güncelle
+  function updateUI() {
+    cartCount.textContent = db.cart.length;
+    authArea.innerHTML = db.session
+      ? `<button class="ghost" onclick="openAccount()">👤 ${esc(db.session)}</button>
+         <button class="ghost" onclick="logout()">Çıkış</button>`
+      : `<button class="ghost" onclick="openAuth('login')">Giriş Yap</button>
+         <button onclick="openAuth('register')">Kayıt Ol</button>`;
+    renderCart();
+  }
+
+  renderProducts();
+  updateUI();
+</script>
+</body>
+</html>
