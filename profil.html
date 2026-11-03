@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profilim - Umbreon Anarchi</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root { --gold: #f5c542; --dark: #0b0d14; --panel: #151a2a; --line: rgba(245,197,66,.18); }
+  body { margin: 0; font-family: system-ui, sans-serif; color: #fff; background: var(--dark); min-height: 100vh; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 30px; background: rgba(11,13,20,.9); border-bottom: 1px solid var(--line);
+  }
+  .topbar a { color: var(--gold); text-decoration: none; font-weight: 700; }
+  .profile { max-width: 800px; margin: 50px auto; padding: 0 20px; text-align: center; }
+  .skin { width: 200px; height: auto; image-rendering: pixelated; }
+  h1 { color: var(--gold); margin: 16px 0 30px; }
+  .stats-grid {
+    display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .stat-label { color: #9aa1b0; font-size: 14px; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--gold); margin-top: 8px; }
+  .notice { color: #6b7285; margin-top: 30px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html">← Ana Sayfa</a>
+  <span id="topName"></span>
+</header>
+
+<main class="profile">
+  <img class="skin" id="skin" alt="Skin">
+  <h1 id="playerName">Giriş yapılmamış</h1>
+
+  <!-- Plugin verileri buraya yüklenecek -->
+  <div class="stats-grid" id="playerStats">
+    <div class="stat"><div class="stat-label">Ölüm</div><div class="stat-value" id="statDeaths">-</div></div>
+    <div class="stat"><div class="stat-label">Öldürme</div><div class="stat-value" id="statKills">-</div></div>
+    <div class="stat"><div class="stat-label">Oynama Süresi</div><div class="stat-value" id="statPlaytime">-</div></div>
+  </div>
+
+  <p class="notice" id="notice"></p>
+</main>
+
+<script>
+  const db = JSON.parse(localStorage.getItem('ua_db')) || { session: null };
+  const name = db.session;
+
+  if (!name) {
+    document.getElementById('notice').textContent = 'Profilini görmek için ana sayfadan giriş yap.';
+    document.getElementById('playerStats').hidden = true;
+  } else {
+    document.getElementById('playerName').textContent = name;
+    document.getElementById('topName').textContent = name;
+    document.getElementById('skin').src = 'https://mc-heads.net/body/' + encodeURIComponent(name) + '/200';
+    document.getElementById('skin').alt = name;
+  }
+</script>
+</body>
+</html>
