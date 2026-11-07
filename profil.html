@@ -3,61 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profilim - Umbreon Anarchi</title>
+<title>Profilim - GALAXY SMP</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; }
-  :root { --gold: #f5c542; --dark: #0b0d14; --panel: #151a2a; --line: rgba(245,197,66,.18); }
+  [hidden] { display: none !important; }
+  :root {
+    --accent: #c084fc;
+    --dark: #12081f;
+    --panel: #1d1030;
+    --line: rgba(192,132,252,.25);
+  }
   body { margin: 0; font-family: system-ui, sans-serif; color: #fff; background: var(--dark); min-height: 100vh; }
+
   .topbar {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 12px 30px; background: rgba(11,13,20,.9); border-bottom: 1px solid var(--line);
+    padding: 12px 30px; background: rgba(18,8,31,.92); border-bottom: 1px solid var(--line);
   }
-  .topbar a { color: var(--gold); text-decoration: none; font-weight: 700; }
+  .topbar a { color: var(--accent); text-decoration: none; font-weight: 700; }
+
+  button {
+    cursor: pointer; border: 0; border-radius: 8px; padding: 9px 16px;
+    font-weight: 700; color: #fff; background: #9333ea;
+  }
+  button:hover { filter: brightness(1.12); }
+
   .profile { max-width: 800px; margin: 50px auto; padding: 0 20px; text-align: center; }
   .skin { width: 200px; height: auto; image-rendering: pixelated; }
-  h1 { color: var(--gold); margin: 16px 0 30px; }
+  h1 { color: var(--accent); margin: 16px 0 30px; }
+
   .stats-grid {
     display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
-  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
-  .stat-label { color: #9aa1b0; font-size: 14px; }
-  .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--gold); margin-top: 8px; }
-  .notice { color: #6b7285; margin-top: 30px; font-size: 14px; }
+  .stat {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px; text-align: center;
+  }
+  .stat-label { color: #b9a3cf; font-size: 14px; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-top: 8px; }
+  .notice { color: #b9a3cf; margin: 40px 0; }
+  .notice a { color: var(--accent); }
+  .info { color: #7d6a94; margin-top: 30px; font-size: 14px; }
+  .logout { margin-top: 30px; }
 </style>
 </head>
 <body>
 
 <header class="topbar">
   <a href="index.html">← Ana Sayfa</a>
-  <span id="topName"></span>
+  <span id="topName" style="color:#d8b4fe"></span>
 </header>
 
 <main class="profile">
-  <img class="skin" id="skin" alt="Skin">
-  <h1 id="playerName">Giriş yapılmamış</h1>
-
-  <!-- Plugin verileri buraya yüklenecek -->
-  <div class="stats-grid" id="playerStats">
-    <div class="stat"><div class="stat-label">Ölüm</div><div class="stat-value" id="statDeaths">-</div></div>
-    <div class="stat"><div class="stat-label">Öldürme</div><div class="stat-value" id="statKills">-</div></div>
-    <div class="stat"><div class="stat-label">Oynama Süresi</div><div class="stat-value" id="statPlaytime">-</div></div>
+  <div id="loginNotice" class="notice" hidden>
+    Profilini görmek için önce <a href="index.html">ana sayfadan</a> giriş yap.
   </div>
 
-  <p class="notice" id="notice"></p>
+  <div id="profileBox" hidden>
+    <img class="skin" id="skin" alt="Skin">
+    <h1 id="playerName"></h1>
+
+    <!-- Plugin bağlanınca bu üç kutuya veri yazılacak -->
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Ölüm</div><div class="stat-value" id="statDeaths">-</div></div>
+      <div class="stat"><div class="stat-label">Öldürme</div><div class="stat-value" id="statKills">-</div></div>
+      <div class="stat"><div class="stat-label">Oynama Süresi</div><div class="stat-value" id="statPlaytime">-</div></div>
+    </div>
+
+    <p class="info">İstatistikler sunucu eklentisi bağlandığında otomatik yüklenecek.</p>
+    <div class="logout">
+      <button onclick="logout()">Çıkış Yap</button>
+    </div>
+  </div>
 </main>
 
 <script>
-  const db = JSON.parse(localStorage.getItem('ua_db')) || { session: null };
-  const name = db.session;
+  const me = JSON.parse(localStorage.getItem('galaxy_session')) || null;
 
-  if (!name) {
-    document.getElementById('notice').textContent = 'Profilini görmek için ana sayfadan giriş yap.';
-    document.getElementById('playerStats').hidden = true;
+  if (!me) {
+    document.getElementById('loginNotice').hidden = false;
   } else {
-    document.getElementById('playerName').textContent = name;
-    document.getElementById('topName').textContent = name;
-    document.getElementById('skin').src = 'https://mc-heads.net/body/' + encodeURIComponent(name) + '/200';
-    document.getElementById('skin').alt = name;
+    document.getElementById('profileBox').hidden = false;
+    document.getElementById('playerName').textContent = me;
+    document.getElementById('topName').textContent = me;
+    document.getElementById('skin').src = 'https://mc-heads.net/body/' + encodeURIComponent(me) + '/200';
+    document.getElementById('skin').alt = me;
+  }
+
+  function logout() {
+    localStorage.removeItem('galaxy_session');
+    location.href = 'index.html';
   }
 </script>
 </body>
