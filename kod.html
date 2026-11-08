@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kod Kullan - GALAXY SMP</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  :root { --accent: #c084fc; --dark: #12081f; --panel: #1d1030; --line: rgba(192,132,252,.25); }
+  body { margin: 0; font-family: system-ui, sans-serif; color: #fff; background: var(--dark); min-height: 100vh; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 30px; background: rgba(18,8,31,.92); border-bottom: 1px solid var(--line);
+  }
+  .topbar a { color: var(--accent); text-decoration: none; font-weight: 700; }
+  .card {
+    max-width: 440px; margin: 60px auto; padding: 28px; border-radius: 14px;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  h1 { color: var(--accent); margin: 0 0 8px; font-size: 1.6rem; }
+  p.desc { color: #b9a3cf; font-size: 14px; margin: 0 0 20px; }
+  label { display: block; color: #d8b4fe; font-size: 14px; margin-bottom: 4px; }
+  input {
+    width: 100%; padding: 11px; margin-bottom: 14px; border-radius: 8px;
+    border: 1px solid #4a3566; background: var(--dark); color: #fff; font-size: 15px;
+  }
+  button {
+    width: 100%; cursor: pointer; border: 0; border-radius: 8px; padding: 12px;
+    font-weight: 700; color: #fff; background: #9333ea; font-size: 15px;
+  }
+  button:hover { filter: brightness(1.12); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .result { margin-top: 16px; min-height: 22px; font-size: 14px; text-align: center; }
+  .ok { color: #86efac; }
+  .err { color: #f87171; }
+  .hint { color: #7d6a94; font-size: 13px; margin-top: 18px; text-align: center; }
+  .notice { text-align: center; color: #b9a3cf; }
+  .notice a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html">← Ana Sayfa</a>
+  <span id="whoami" style="color:#d8b4fe;font-size:14px"></span>
+</header>
+
+<div class="card" id="redeemBox" hidden>
+  <h1>Kod Kullan</h1>
+  <p class="desc">Aldığın kodu gir. Ödül, oyunda çevrimiçi olduğun sırada hesabına teslim edilir.</p>
+
+  <form id="redeemForm">
+    <label for="code">Kod</label>
+    <input id="code" maxlength="32" placeholder="Örn: BASLANGIC" autocomplete="off" required>
+    <button type="submit" id="redeemBtn">Kodu Kullan</button>
+  </form>
+
+  <p class="result" id="result"></p>
+  <p class="hint">Kodlar büyük/küçük harf duyarsızdır. Her kod bir kez kullanılabilir.</p>
+</div>
+
+<div class="card notice" id="loginNotice" hidden>
+  Kod kullanmak için önce <a href="index.html">ana sayfadan</a> giriş yap.
+</div>
+
+<script>
+  /* ===== AYARLAR ===== */
+  // Sunucu fonksiyonunun adresi (fonksiyonu yayınladıktan sonra yaz)
+  const REDEEM_URL = 'BURAYA_FONKSIYON_ADRESI';
+
+  const me = JSON.parse(localStorage.getItem('galaxy_session')) || null;
+
+  if (!me) {
+    document.getElementById('loginNotice').hidden = false;
+  } else {
+    document.getElementById('redeemBox').hidden = false;
+    document.getElementById('whoami').textContent = 'Giriş: ' + me;
+  }
+
+  document.getElementById('redeemForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const codeInput = document.getElementById('code');
+    const result = document.getElementById('result');
+    const btn = document.getElementById('redeemBtn');
+    const code = codeInput.value.trim();
+
+    result.className = 'result';
+    if (!code) return;
+
+    btn.disabled = true;
+    result.textContent = 'Kontrol ediliyor...';
+
+    try {
+      const r = await fetch(REDEEM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: me, code: code })
+      });
+      const d = await r.json();
+      if (d.ok) {
+        result.className = 'result ok';
+        result.textContent = d.message || 'Ödül teslim edildi!';
+        codeInput.value = '';
+      } else {
+        result.className = 'result err';
+        result.textContent = d.message || 'Kod geçersiz veya kullanılmış.';
+      }
+    } catch {
+      result.className = 'result err';
+      result.textContent = 'Sunucuya ulaşılamadı. Daha sonra tekrar dene.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
