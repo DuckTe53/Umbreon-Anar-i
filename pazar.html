@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pazar - GALAXY SMP</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  :root {
+    --accent: #c084fc;
+    --dark: #12081f;
+    --panel: #1d1030;
+    --line: rgba(192,132,252,.25);
+  }
+  body { margin: 0; font-family: system-ui, sans-serif; color: #fff; background: var(--dark); min-height: 100vh; }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 30px; background: rgba(18,8,31,.92); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar a { color: var(--accent); text-decoration: none; font-weight: 700; }
+  h1 { font-size: 1.3rem; color: var(--accent); margin: 0; }
+  #whoami { color: #d8b4fe; font-size: 14px; }
+
+  main { max-width: 800px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  button {
+    cursor: pointer; border: 0; border-radius: 8px; padding: 10px 18px;
+    font-weight: 700; color: #fff; background: #9333ea; font-size: 14px;
+  }
+  button:hover { filter: brightness(1.12); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  input, textarea {
+    width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #4a3566;
+    background: var(--dark); color: #fff; font-size: 15px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  label { display: block; color: #d8b4fe; font-size: 14px; margin: 10px 0 4px; }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .panel h2 { margin: 0 0 14px; font-size: 1.1rem; color: var(--accent); }
+
+  .offer { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 18px; }
+  .offer-head { display: flex; align-items: center; gap: 12px; }
+  .offer-head img, .comment img { width: 36px; height: 36px; border-radius: 6px; image-rendering: pixelated; flex-shrink: 0; }
+  .offer-title { font-weight: 700; font-size: 1.05rem; color: #fff; }
+  .offer-meta { color: #7d6a94; font-size: 12px; }
+  .price { display: inline-block; margin-top: 10px; padding: 5px 12px; border-radius: 8px;
+    border: 1px solid var(--accent); color: var(--accent); font-weight: 700; font-size: 14px; }
+  .offer-desc { color: #ece4f7; margin: 10px 0 0; line-height: 1.5; word-break: break-word; }
+
+  .comments { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+  .comment { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+  .comment-body { background: var(--dark); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: 1; }
+  .comment-user { color: var(--accent); font-weight: 700; font-size: 13px; }
+  .comment-time { color: #7d6a94; font-size: 11px; margin-left: 6px; font-weight: 400; }
+  .comment-text { color: #ece4f7; font-size: 14px; margin-top: 3px; word-break: break-word; }
+
+  .comment-form { display: flex; gap: 8px; margin-top: 10px; }
+  .comment-form input { flex: 1; }
+
+  .notice { text-align: center; color: #b9a3cf; padding: 30px 20px; }
+  .notice a { color: var(--accent); }
+  .msg { color: #f87171; font-size: 14px; min-height: 18px; margin-top: 8px; }
+  .empty { color: #7d6a94; text-align: center; padding: 30px 0; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html">← Ana Sayfa</a>
+  <h1>Pazar</h1>
+  <span id="whoami"></span>
+</header>
+
+<main>
+  <div class="notice" id="loginNotice" hidden>
+    Teklif vermek ve yorum yapmak için önce <a href="index.html">ana sayfadan</a> giriş yap. Teklifleri yine de görebilirsin.
+  </div>
+
+  <div class="panel" id="offerPanel" hidden>
+    <h2>Yeni Teklif</h2>
+    <form id="offerForm">
+      <label for="offerTitle">Ne teklif ediyorsun / ne istiyorsun?</label>
+      <input id="offerTitle" maxlength="60" placeholder="Örn: Elmas kılıç" required>
+      <label for="offerPrice">Fiyat (serbest metin)</label>
+      <input id="offerPrice" maxlength="40" placeholder="Örn: 64 demir" required>
+      <label for="offerDesc">Açıklama (isteğe bağlı)</label>
+      <textarea id="offerDesc" maxlength="300" placeholder="Detaylar"></textarea>
+      <div style="margin-top:12px"><button type="submit" id="offerBtn">Teklifi Yayınla</button></div>
+      <p class="msg" id="offerMsg"></p>
+    </form>
+  </div>
+
+  <div id="offerList"></div>
+  <p class="empty" id="emptyNote" hidden>Henüz teklif yok.</p>
+</main>
+
+<script>
+  /* ===== AYARLAR ===== */
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBMoXFanC2gU2ZnuVr2CkLnmGMVWRzqzJs",
+    authDomain: "umbreon-chat.firebaseapp.com",
+    databaseURL: "https://umbreon-chat-default-rtdb.firebaseio.com",
+    projectId: "umbreon-chat",
+    appId: "1:983558497766:web:113e2419300a3730b2e227"
+  };
+
+  /* ===== OTURUM ===== */
+  const me = JSON.parse(localStorage.getItem('galaxy_session')) || null;
+
+  firebase.initializeApp(FIREBASE_CONFIG);
+  const db = firebase.database();
+
+  const $ = id => document.getElementById(id);
+  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function head(name, size) { return 'https://mc-heads.net/avatar/' + encodeURIComponent(name) + '/' + size; }
+  function timeStr(t) { return new Date(t).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+
+  if (me) {
+    $('whoami').textContent = 'Giriş: ' + me;
+    $('offerPanel').hidden = false;
+  } else {
+    $('loginNotice').hidden = false;
+  }
+
+  /* ===== TEKLİF EKLE ===== */
+  $('offerForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!me) return;
+    const title = $('offerTitle').value.trim();
+    const price = $('offerPrice').value.trim();
+    const desc = $('offerDesc').value.trim();
+    if (!title || !price) return;
+
+    const btn = $('offerBtn');
+    btn.disabled = true;
+    db.ref('pazar').push({
+      owner: me,
+      title: title,
+      price: price,
+      desc: desc,
+      created: Date.now()
+    }).then(() => {
+      $('offerTitle').value = '';
+      $('offerPrice').value = '';
+      $('offerDesc').value = '';
+      $('offerMsg').textContent = '';
+    }).catch(err => {
+      $('offerMsg').textContent = 'Teklif gönderilemedi: ' + err.message;
+    }).finally(() => { btn.disabled = false; });
+  });
+
+  /* ===== TEKLİFLERİ LİSTELE ===== */
+  db.ref('pazar').orderByChild('created').on('value', snap => {
+    const list = $('offerList');
+    list.innerHTML = '';
+    const offers = [];
+    snap.forEach(child => { offers.push({ id: child.key, ...child.val() }); });
+    offers.reverse();
+    $('emptyNote').hidden = offers.length > 0;
+
+    offers.forEach(o => list.appendChild(renderOffer(o)));
+  });
+
+  function renderOffer(o) {
+    const card = document.createElement('div');
+    card.className = 'offer';
+    card.innerHTML = `
+      <div class="offer-head">
+        <img src="${head(o.owner, 36)}" alt="">
+        <div>
+          <div class="offer-title">${esc(o.title)}</div>
+          <div class="offer-meta">${esc(o.owner)} • ${timeStr(o.created)}</div>
+        </div>
+      </div>
+      <span class="price">${esc(o.price)}</span>
+      ${o.desc ? `<p class="offer-desc">${esc(o.desc)}</p>` : ''}
+      <div class="comments" id="c-${o.id}"></div>
+      ${me ? `
+      <form class="comment-form" data-offer="${o.id}">
+        <input maxlength="200" placeholder="Yorum yaz..." required>
+        <button type="submit">Yorum</button>
+      </form>` : ''}
+    `;
+
+    const commentsBox = card.querySelector('.comments');
+    db.ref('pazar/' + o.id + '/comments').orderByChild('time').on('value', cs => {
+      commentsBox.innerHTML = '';
+      cs.forEach(c => {
+        const v = c.val();
+        const row = document.createElement('div');
+        row.className = 'comment';
+        row.innerHTML = `
+          <img src="${head(v.user, 36)}" alt="">
+          <div class="comment-body">
+            <span class="comment-user">${esc(v.user)}</span>
+            <span class="comment-time">${timeStr(v.time)}</span>
+            <div class="comment-text">${esc(v.text)}</div>
+          </div>`;
+        commentsBox.appendChild(row);
+      });
+    });
+
+    const form = card.querySelector('.comment-form');
+    if (form) {
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        const input = form.querySelector('input');
+        const text = input.value.trim();
+        if (!text) return;
+        db.ref('pazar/' + o.id + '/comments').push({
+          user: me,
+          text: text,
+          time: Date.now()
+        }).then(() => { input.value = ''; })
+          .catch(err => alert('Yorum gönderilemedi: ' + err.message));
+      });
+    }
+
+    return card;
+  }
+</script>
+</body>
+</html>
